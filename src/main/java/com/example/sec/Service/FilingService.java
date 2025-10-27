@@ -51,6 +51,7 @@ public class FilingService {
     // Thread pool for async saving
     private final ExecutorService filingExecutor = Executors.newFixedThreadPool(10);
 
+
     @PostConstruct
     public void start() {
         log("Starting SEC Filing Poller...");
