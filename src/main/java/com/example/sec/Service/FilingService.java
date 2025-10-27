@@ -148,7 +148,7 @@ public class FilingService {
                         // Create Filing without manually setting timestamps
                         Filing filing = new Filing();
                         filing.setTitle(title.toString().trim());
-                        filing.setLink("https://www.sec.gov" + altLink);
+                        filing.setLink(altLink);
                         filing.setSummary(decode(summary.toString().trim()));
 
                         // Save asynchronously
