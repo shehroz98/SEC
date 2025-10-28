@@ -45,12 +45,8 @@ public class FilingService {
             .connectTimeout(Duration.ofSeconds(10))
             .build();
 
-    // Multi-threaded scheduler
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(3);
-
-    // Thread pool for async saving
     private final ExecutorService filingExecutor = Executors.newFixedThreadPool(10);
-
 
     @PostConstruct
     public void start() {
@@ -145,14 +141,29 @@ public class FilingService {
                     String name = ee.getName().getLocalPart();
 
                     if ("entry".equals(name) && inEntry) {
-                        // Create Filing without manually setting timestamps
                         Filing filing = new Filing();
                         filing.setTitle(title.toString().trim());
                         filing.setLink(altLink);
                         filing.setSummary(decode(summary.toString().trim()));
 
-                        // Save asynchronously
-                        CompletableFuture.runAsync(() -> repository.save(filing), filingExecutor);
+                        // ✅ Save asynchronously with Java-only duplicate handling
+                        CompletableFuture.runAsync(() -> {
+                            try {
+                                repository.findByLink(filing.getLink())
+                                        .ifPresentOrElse(
+                                                existing -> {
+                                                    // Only update updated_at
+                                                    repository.touch(existing.getId());
+                                                },
+                                                () -> {
+                                                    // Insert new filing
+                                                    repository.save(filing);
+                                                }
+                                        );
+                            } catch (Exception e) {
+                                log("Error saving filing: " + e.getMessage());
+                            }
+                        }, filingExecutor);
 
                         inEntry = false;
                         current = null;
